@@ -4,9 +4,8 @@ import { Pause, Play, Square, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { getSpec, SYMBOLS } from "@/lib/market/symbols";
 import { closePrice, fmtMoney, positionProfit } from "@/lib/trading/calc";
-import { computeStartAt, startEngine, stopEngineNow, batchTarget } from "@/lib/trading/engine";
-import { balanceOperation, initialState } from "@/lib/trading/ops";
-import { isAdminUnlocked, nowMs, setState, useTerminal } from "@/lib/trading/store";
+import { computeStartAt, batchTarget } from "@/lib/trading/engine";
+import { dispatch, isAdminUnlocked, nowMs, patchAccount, patchAdmin, useTerminal } from "@/lib/trading/store";
 import type { AdminConfig, Duration } from "@/lib/trading/types";
 import { dateInZone, fmtCountdown, formatInZone, POPULAR_ZONES, type TimeUnit } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -21,14 +20,6 @@ function useNow(ms = 1000) {
     return () => clearInterval(id);
   }, [ms]);
   return n;
-}
-
-function patchAdmin(p: Partial<AdminConfig>) {
-  setState((s) => {
-    const admin = { ...s.admin, ...p };
-    const live = s.engine.status !== "idle" && s.engine.status !== "finished";
-    return { ...s, admin, engine: live ? { ...s.engine, config: { ...s.engine.config, ...p } } : s.engine };
-  });
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -175,7 +166,7 @@ function AdminPanel() {
       toast.error("Pick a start date and time");
       return;
     }
-    setState((st) => startEngine(st, nowMs()));
+    void dispatch({ t: "start" });
     toast.success("Simulation started");
   };
 
@@ -219,20 +210,14 @@ function AdminPanel() {
               </button>
             ) : e.status === "stopping" ? (
               <button
-                onClick={() => setState((st) => ({ ...st, engine: { ...st.engine, status: "running" } }))}
+                onClick={() => void dispatch({ t: "resume" })}
                 className="col-span-2 flex h-11 items-center justify-center gap-2 rounded-xl bg-primary font-medium text-primary-foreground"
               >
                 <Play className="h-4 w-4" /> Resume
               </button>
             ) : (
               <button
-                onClick={() =>
-                  setState((st) =>
-                    st.engine.status === "scheduled"
-                      ? { ...st, engine: { ...st.engine, status: "idle", startAt: null } }
-                      : { ...st, engine: { ...st.engine, status: "stopping" } },
-                  )
-                }
+                onClick={() => void dispatch({ t: "pause" })}
                 className="col-span-2 flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary font-medium text-primary"
               >
                 <Pause className="h-4 w-4" /> Pause
@@ -240,7 +225,7 @@ function AdminPanel() {
             )}
             <button
               onClick={() => {
-                setState((st) => stopEngineNow(st, nowMs()));
+                void dispatch({ t: "stop" });
                 toast("Simulation stopped");
               }}
               className="flex h-11 items-center justify-center gap-2 rounded-xl border border-down font-medium text-down"
@@ -272,7 +257,7 @@ function AdminPanel() {
                     toast.error("Enter a valid amount");
                     return;
                   }
-                  setState((st) => balanceOperation(st, v - st.account.balance, nowMs()));
+                  void dispatch({ t: "setBalance", value: v });
                   toast.success("Balance updated");
                 }}
                 className="h-11 rounded-lg bg-primary px-3 text-[14px] font-medium text-primary-foreground"
@@ -287,22 +272,7 @@ function AdminPanel() {
                     toast.error("Enter a valid amount");
                     return;
                   }
-                  setState((st) => {
-                    const fresh = initialState(nowMs());
-                    const base = { ...fresh, deals: fresh.deals.map((d) => ({ ...d, profit: v })) };
-                    return {
-                      ...st,
-                      positions: [],
-                      history: [],
-                      orders: [],
-                      deals: base.deals,
-                      journal: [],
-                      offsets: {},
-                      nextTicket: base.nextTicket,
-                      account: { ...st.account, balance: v },
-                      engine: { ...base.engine, config: st.admin },
-                    };
-                  });
+                  void dispatch({ t: "reset", value: v });
                   toast.success("Account reset");
                 }}
                 className="grid h-11 w-11 place-items-center rounded-lg border border-input text-icon"
@@ -315,7 +285,7 @@ function AdminPanel() {
             <Field label="Leverage">
               <select
                 value={s.account.leverage}
-                onChange={(ev) => setState((st) => ({ ...st, account: { ...st.account, leverage: Number(ev.target.value) } }))}
+                onChange={(ev) => patchAccount({ leverage: Number(ev.target.value) })}
                 className="h-11 w-full rounded-lg border border-input bg-background px-2"
               >
                 {[50, 100, 200, 500, 1000, 2000, 3000].map((l) => (
@@ -326,14 +296,14 @@ function AdminPanel() {
               </select>
             </Field>
             <Field label="Login">
-              <input value={s.account.login} onChange={(ev) => setState((st) => ({ ...st, account: { ...st.account, login: ev.target.value } }))} className={inputCls} />
+              <input value={s.account.login} onChange={(ev) => patchAccount({ login: ev.target.value })} className={inputCls} />
             </Field>
           </div>
           <Field label="Account name">
-            <input value={s.account.name} onChange={(ev) => setState((st) => ({ ...st, account: { ...st.account, name: ev.target.value } }))} className={inputCls} />
+            <input value={s.account.name} onChange={(ev) => patchAccount({ name: ev.target.value })} className={inputCls} />
           </Field>
           <Field label="Server">
-            <input value={s.account.server} onChange={(ev) => setState((st) => ({ ...st, account: { ...st.account, server: ev.target.value } }))} className={inputCls} />
+            <input value={s.account.server} onChange={(ev) => patchAccount({ server: ev.target.value })} className={inputCls} />
           </Field>
         </Section>
 

@@ -4,8 +4,7 @@ import { ArrowDownUp, FilePlus2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { getSpec } from "@/lib/market/symbols";
 import { closePrice, fmtMoney, positionProfit, summarize } from "@/lib/trading/calc";
-import { closePositions } from "@/lib/trading/ops";
-import { getState, nowMs, setState, useTerminal } from "@/lib/trading/store";
+import { dispatch, getState, setState, useTerminal } from "@/lib/trading/store";
 import type { Position } from "@/lib/trading/types";
 import { fmtDateTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -126,9 +125,11 @@ export function PositionsList({ emptyText = "", sort = "open" as SortKey }: { em
         return q ? fn(p, positionProfit(p, closePrice(p.type, q), st.display)) : false;
       })
       .map((p) => p.ticket);
-    const res = closePositions(st, tickets, nowMs());
-    setState(() => res.state);
-    if (tickets.length) toast.success(`${tickets.length} position(s) closed, ${res.profit.toFixed(2)} USD`);
+    if (!tickets.length) return;
+    void dispatch({ t: "close", tickets }).then((res) => {
+      if (res) toast.success(`${res.count ?? tickets.length} position(s) closed, ${(res.profit ?? 0).toFixed(2)} USD`);
+      else toast.error("Could not close, check your connection");
+    });
   };
 
   return (
@@ -199,9 +200,10 @@ function CloseSheet({ p, onClose }: { p: Position; onClose: () => void }) {
         <Row label="Profit" value={fmtMoney(profit)} valueClass={profit < 0 ? "text-down" : "text-up"} />
         <button
           onClick={() => {
-            const res = closePositions(getState(), [p.ticket], nowMs());
-            setState(() => res.state);
-            toast.success(`Position closed, ${res.profit.toFixed(2)} USD`);
+            void dispatch({ t: "close", tickets: [p.ticket] }).then((res) => {
+              if (res) toast.success(`Position closed, ${(res.profit ?? 0).toFixed(2)} USD`);
+              else toast.error("Could not close, check your connection");
+            });
             onClose();
           }}
           className={cn(

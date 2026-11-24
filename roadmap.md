@@ -1,6 +1,8 @@
 # Roadmap
-- [ ] Fix live prices not showing (price source rate-limited) — add backup sources
-- [ ] Share account, admin settings and trades across all phones (Lovable Cloud)
-- [ ] Keep simulation running when the app is closed (scheduled server tick)
-- [ ] Verify a full batch opens, closes in profit and grows the balance in the app
-- [ ] Check menu pages, New order screen and Admin form at phone size
+- [x] Fix live prices not showing (price source rate-limited) — add backup sources
+- [x] Share account, admin settings and trades across all phones (Lovable Cloud)
+- [x] Keep simulation running when the app is closed (scheduled server tick every minute; works on the published site)
+- [x] Verify a full batch opens, closes in profit and grows the balance in the app
+- [x] Check Quotes, Charts, Trade, Admin and Settings at phone size
+- [x] Android app (APK) that opens the published site; downloadable from Settings next to Admin ("Install app")
+- [x] "Fetch latest updates" button in Settings that pulls the newest version and reloads

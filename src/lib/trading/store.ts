@@ -1,8 +1,16 @@
 import { useSyncExternalStore } from "react";
-import { computeDisplay, initialState } from "./ops";
-import type { RealQuote, TerminalState } from "./types";
+import { applyCommand, mergeLogs, type Command, type CommandResult, type LogEntry, type SharedState } from "./commands";
+import { initialState } from "./ops";
+import type { Account, AdminConfig, TerminalState } from "./types";
 
-const KEY = "mt5sim:v1";
+/**
+ * Client copy of the shared terminal. The account, trades and admin settings come from the
+ * server (shared by every phone); the quotes list, chart choice and UI switches stay on this phone.
+ */
+
+const LOCAL_KEY = "mt5sim:local:v2";
+const ADMIN_KEY = "mt5sim:adminCode";
+const ADMIN_CODE = "4030";
 
 let state: TerminalState = initialState(0);
 const serverState = state;
@@ -18,29 +26,29 @@ export function setClockSkew(ms: number) {
   clockSkew = ms;
 }
 
-function persist() {
-  if (typeof window === "undefined" || !state.hydrated) return;
+function persistLocal() {
+  if (typeof window === "undefined") return;
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    const { real: _r, display: _d, hydrated: _h, ...rest } = state;
     try {
-      localStorage.setItem(KEY, JSON.stringify(rest));
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ quotesList: state.quotesList, chart: state.chart, settings: state.settings }));
     } catch {
       /* storage full or disabled */
     }
-  }, 700);
+  }, 500);
 }
 
 export function getState() {
   return state;
 }
 
+/** Change local view state (chart, quotes list, switches). */
 export function setState(updater: (s: TerminalState) => TerminalState) {
   const next = updater(state);
   if (next === state) return;
   state = next;
-  persist();
+  persistLocal();
   listeners.forEach((l) => l());
 }
 
@@ -53,55 +61,148 @@ export function useTerminal(): TerminalState {
   return useSyncExternalStore(subscribe, getState, () => serverState);
 }
 
+/** Load this phone's own view preferences. */
 export function hydrate() {
-  if (state.hydrated) return;
-  const base = initialState(Date.now());
-  let loaded: Partial<TerminalState> = {};
+  if (typeof window === "undefined") return;
   try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) loaded = JSON.parse(raw) as Partial<TerminalState>;
+    const raw = localStorage.getItem(LOCAL_KEY);
+    if (!raw) return;
+    const loaded = JSON.parse(raw) as Partial<Pick<TerminalState, "quotesList" | "chart" | "settings">>;
+    setState((s) => ({
+      ...s,
+      quotesList: Array.isArray(loaded.quotesList) && loaded.quotesList.length ? loaded.quotesList : s.quotesList,
+      chart: { ...s.chart, ...(loaded.chart ?? {}) },
+      settings: { ...s.settings, ...(loaded.settings ?? {}) },
+    }));
   } catch {
-    loaded = {};
+    /* ignore broken storage */
   }
-  setState(() => ({
-    ...base,
-    ...loaded,
-    admin: { ...base.admin, ...(loaded.admin ?? {}) },
-    settings: { ...base.settings, ...(loaded.settings ?? {}) },
-    account: { ...base.account, ...(loaded.account ?? {}) },
-    real: {},
-    display: {},
-    hydrated: true,
-  }));
 }
 
-export function applyRealQuotes(quotes: { symbol: string; price: number; prevClose: number; high: number; low: number; time: number }[], digitsOf: (s: string) => number) {
+/* ---------------- server sync ---------------- */
+
+export interface Snapshot {
+  shared: SharedState;
+  logs: LogEntry[];
+  full: boolean;
+  serverTime: number;
+  result: CommandResult | null;
+}
+
+interface Transport {
+  sync: (d: { since: number; epoch: number }) => Promise<Snapshot>;
+  send: (d: { since: number; epoch: number; cmd: Command; code?: string }) => Promise<Snapshot>;
+}
+
+let transport: Transport | null = null;
+let cursor = 0;
+let pending = 0;
+let mutationSeq = 0;
+let queue: Promise<unknown> = Promise.resolve();
+
+export function setTransport(t: Transport) {
+  transport = t;
+}
+
+export function applySnapshot(snap: Snapshot) {
   setState((s) => {
-    const real: Record<string, RealQuote> = { ...s.real };
-    for (const q of quotes) {
-      const d = digitsOf(q.symbol);
-      // Sources give fewer decimals than MT5 shows; keep the last digit alive within one point.
-      const jitter = d >= 3 ? Math.round((Math.random() - 0.5) * 3) * Math.pow(10, -d) : 0;
-      real[q.symbol] = {
-        bid: Number((q.price + jitter).toFixed(d)),
-        prevClose: q.prevClose,
-        high: q.high,
-        low: q.low,
-        time: Date.now(),
-      };
-    }
-    const ns = { ...s, real };
-    return { ...ns, display: computeDisplay(ns) };
+    const base = snap.full ? { deals: [], orders: [], history: [], journal: [] } : s;
+    return { ...s, ...snap.shared, ...mergeLogs(base, snap.logs), hydrated: true };
   });
+  let max = snap.full ? 0 : cursor;
+  for (const r of snap.logs) if (r.id > max) max = r.id;
+  cursor = max;
+}
+
+/** Pull the latest shared account from the server (skipped while this phone is saving a change). */
+export async function syncNow() {
+  if (!transport || pending > 0) return;
+  const seq = mutationSeq;
+  const sent = Date.now();
+  const snap = await transport.sync({ since: cursor, epoch: state.epoch });
+  if (pending > 0 || seq !== mutationSeq) return;
+  setClockSkew(snap.serverTime - (sent + Date.now()) / 2);
+  applySnapshot(snap);
+}
+
+function send(cmd: Command): Promise<CommandResult | null> {
+  pending++;
+  mutationSeq++;
+  const run = async () => {
+    try {
+      if (!transport) throw new Error("Not connected");
+      const code = getAdminCode();
+      const snap = await transport.send({ since: cursor, epoch: state.epoch, cmd, ...(code ? { code } : {}) });
+      mutationSeq++;
+      applySnapshot(snap);
+      return snap.result ?? {};
+    } catch (e) {
+      console.error(e);
+      return null;
+    } finally {
+      pending--;
+    }
+  };
+  const p = queue.then(run, run);
+  queue = p;
+  return p;
+}
+
+/** Apply a change on this phone right away and save it for every phone. */
+export function dispatch(cmd: Command): Promise<CommandResult | null> {
+  setState((s) => {
+    const r = applyCommand(s, cmd, nowMs());
+    // History lists only ever come from the server, so they never show twice.
+    return { ...r.state, deals: s.deals, orders: s.orders, history: s.history, journal: s.journal };
+  });
+  return send(cmd);
+}
+
+let adminPatch: Partial<AdminConfig> = {};
+let accountPatch: Partial<Account> = {};
+let patchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function schedulePatch() {
+  if (patchTimer) clearTimeout(patchTimer);
+  else pending++;
+  patchTimer = setTimeout(() => {
+    patchTimer = null;
+    const a = adminPatch;
+    const b = accountPatch;
+    adminPatch = {};
+    accountPatch = {};
+    if (Object.keys(a).length) void send({ t: "admin", patch: a });
+    if (Object.keys(b).length) void send({ t: "account", patch: b as Extract<Command, { t: "account" }>["patch"] });
+    pending--;
+  }, 600);
+}
+
+/** Edit admin settings (typing-friendly: saved shortly after the last change). */
+export function patchAdmin(p: Partial<AdminConfig>) {
+  setState((s) => applyCommand(s, { t: "admin", patch: p }, nowMs()).state);
+  adminPatch = { ...adminPatch, ...p };
+  schedulePatch();
+}
+
+export function patchAccount(p: Partial<Pick<Account, "name" | "login" | "server" | "leverage">>) {
+  setState((s) => ({ ...s, account: { ...s.account, ...p } }));
+  accountPatch = { ...accountPatch, ...p };
+  schedulePatch();
+}
+
+/* ---------------- admin access ---------------- */
+
+function getAdminCode(): string | null {
+  return typeof window === "undefined" ? null : sessionStorage.getItem(ADMIN_KEY);
 }
 
 export function isAdminUnlocked() {
-  return typeof window !== "undefined" && sessionStorage.getItem("mt5sim:admin") === "1";
+  return getAdminCode() === ADMIN_CODE;
 }
 
 export function unlockAdmin(code: string) {
-  if (code === "4030") {
-    sessionStorage.setItem("mt5sim:admin", "1");
+  if (code === ADMIN_CODE) {
+    if (typeof window !== "undefined") sessionStorage.setItem(ADMIN_KEY, code);
     return true;
   }
   return false;

@@ -66,8 +66,12 @@ function finishBatch(s: TerminalState, now: number): TerminalState {
   };
 }
 
-export function engineTick(input: TerminalState, now: number, rnd: () => number = Math.random): TerminalState {
+/** Advance the simulation by one step. `dt` is the step length in ms; the path is tuned per 500 ms. */
+export function engineTick(input: TerminalState, now: number, rnd: () => number = Math.random, dt = 500): TerminalState {
   let s = input;
+  const stepK = Math.max(0.1, dt / 500);
+  const ease = (rate: number) => 1 - Math.pow(1 - rate, stepK);
+  const noise = Math.sqrt(stepK);
   const e = s.engine;
   const cfg = e.config;
   const controlled = e.batch && e.batch.phase !== "opening" ? e.batch.symbol : null;
@@ -77,7 +81,7 @@ export function engineTick(input: TerminalState, now: number, rnd: () => number 
   const offsets = { ...s.offsets };
   for (const [sym, off] of Object.entries(offsets)) {
     if (sym === controlled || off === 0) continue;
-    const next = off * 0.95;
+    const next = off * Math.pow(0.95, stepK);
     offsets[sym] = Math.abs(next) < point(getSpec(sym)) / 2 ? 0 : next;
     offsetsChanged = true;
   }
@@ -152,11 +156,11 @@ export function engineTick(input: TerminalState, now: number, rnd: () => number 
   if (phase === "first" && now >= b.firstEndsAt) phase = "second";
   if (phase === "first") {
     const wave = -b.depth * (0.6 + 0.4 * Math.sin(((now - b.openedAt) / 18000) * Math.PI * 2));
-    F += (wave - F) * 0.12 + (rnd() - 0.5) * b.depth * 0.1;
+    F += (wave - F) * ease(0.12) + (rnd() - 0.5) * b.depth * 0.1 * noise;
     F = Math.min(-0.02 * b.depth, Math.max(-b.depth * 1.1, F));
   } else {
     const goal = b.target * 1.3 + b.depth * 0.1;
-    F += (goal - F) * 0.05 + (rnd() - 0.42) * Math.max(b.depth, b.target) * 0.06;
+    F += (goal - F) * ease(0.05) + (rnd() - 0.42) * Math.max(b.depth, b.target) * 0.06 * noise;
   }
 
   // Translate the desired P/L into the symbol price shown in the app.

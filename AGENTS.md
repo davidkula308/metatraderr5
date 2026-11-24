@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+
+- The account, positions, admin settings and simulation engine are shared across all devices: the server (`src/lib/trading/terminal.server.ts`) is the only place that advances and saves them; clients send commands and poll snapshots. Why: every phone must show the same account, and trading must continue while no phone is open (a per-minute scheduled call to `/api/public/tick` drives it).
+- Per-device view preferences (quotes list, chart symbol/timeframe/lot, UI switches) stay in localStorage. Why: they are personal and must not overwrite other phones.
+- The Android app is a thin WebView wrapper around the published site, built from `android/` by `android/build.sh` into `public/downloads/`. Why: the app updates itself whenever the site is republished; only a wrapper change needs a new APK.

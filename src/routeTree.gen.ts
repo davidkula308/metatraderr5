@@ -28,6 +28,7 @@ import { Route as OrderRouteImport } from './routes/order'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SymbolsRouteImport } from './routes/symbols'
 import { Route as TradeRouteImport } from './routes/trade'
+import { Route as ApiPublicTickRouteImport } from './routes/api/public/tick'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -124,6 +125,11 @@ const TradeRoute = TradeRouteImport.update({
   path: '/trade',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicTickRoute = ApiPublicTickRouteImport.update({
+  id: '/api/public/tick',
+  path: '/api/public/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/symbols': typeof SymbolsRoute
   '/trade': typeof TradeRoute
+  '/api/public/tick': typeof ApiPublicTickRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/symbols': typeof SymbolsRoute
   '/trade': typeof TradeRoute
+  '/api/public/tick': typeof ApiPublicTickRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/symbols': typeof SymbolsRoute
   '/trade': typeof TradeRoute
+  '/api/public/tick': typeof ApiPublicTickRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/symbols'
     | '/trade'
+    | '/api/public/tick'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/symbols'
     | '/trade'
+    | '/api/public/tick'
   id:
     | '__root__'
     | '/'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/symbols'
     | '/trade'
+    | '/api/public/tick'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -275,6 +287,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SymbolsRoute: typeof SymbolsRoute
   TradeRoute: typeof TradeRoute
+  ApiPublicTickRoute: typeof ApiPublicTickRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -412,6 +425,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TradeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/tick': {
+      id: '/api/public/tick'
+      path: '/api/public/tick'
+      fullPath: '/api/public/tick'
+      preLoaderRoute: typeof ApiPublicTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -435,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SymbolsRoute: SymbolsRoute,
   TradeRoute: TradeRoute,
+  ApiPublicTickRoute: ApiPublicTickRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,4 +1,4 @@
-import { SYMBOLS, getSpec, type Timeframe } from "./symbols";
+import { SYMBOLS, TF_SECONDS, getSpec, type Timeframe } from "./symbols";
 
 const UA = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Mobile Safari/537.36";
 
@@ -50,10 +50,45 @@ function chunk<T>(arr: T[], n: number): T[][] {
   return out;
 }
 
-export async function fetchQuotes(): Promise<RealQuote[]> {
-  if (quoteCache && Date.now() - quoteCache.at < 1500) return quoteCache.data;
+/** TradingView ticker for each app symbol (primary live source, no key needed). */
+function tvTicker(name: string): string {
+  if (name === "XAUUSD") return "OANDA:XAUUSD";
+  if (name === "XAGUSD") return "TVC:SILVER";
+  if (name === "BTCUSD") return "BITSTAMP:BTCUSD";
+  return `FX_IDC:${name}`;
+}
 
-  const groups = chunk(SYMBOLS, 10);
+async function fetchTradingView(): Promise<RealQuote[]> {
+  try {
+    const tickers = SYMBOLS.map((s) => tvTicker(s.name));
+    const res = await fetch("https://scanner.tradingview.com/global/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "User-Agent": UA },
+      body: JSON.stringify({ symbols: { tickers }, columns: ["close", "high", "low", "change"] }),
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { data?: { s: string; d: (number | null)[] }[] };
+    const byTicker = new Map((json.data ?? []).map((r) => [r.s, r.d]));
+    const out: RealQuote[] = [];
+    for (const spec of SYMBOLS) {
+      const d = byTicker.get(tvTicker(spec.name));
+      const close = d?.[0];
+      if (typeof close !== "number" || !(close > 0)) continue;
+      const high = typeof d?.[1] === "number" ? d[1] : close;
+      const low = typeof d?.[2] === "number" ? d[2] : close;
+      const change = typeof d?.[3] === "number" ? d[3] : 0;
+      out.push({ symbol: spec.name, price: close, prevClose: close / (1 + change / 100), high, low, time: Date.now() });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+async function fetchYahooQuotes(names: Set<string>): Promise<RealQuote[]> {
+  const specs = SYMBOLS.filter((s) => names.has(s.name));
+  if (specs.length === 0) return [];
+  const groups = chunk(specs, 10);
   const [sparks, xau, xag] = await Promise.all([
     Promise.all(
       groups.map((g) =>
@@ -64,18 +99,20 @@ export async function fetchQuotes(): Promise<RealQuote[]> {
         ),
       ),
     ),
-    fetchSpot("XAU"),
-    fetchSpot("XAG"),
+    specs.some((s) => s.spot === "XAU") ? fetchSpot("XAU") : Promise.resolve(null),
+    specs.some((s) => s.spot === "XAG") ? fetchSpot("XAG") : Promise.resolve(null),
   ]);
   const merged: Record<string, SparkEntry> = Object.assign({}, ...sparks.map((s) => s ?? {}));
-
   const out: RealQuote[] = [];
-  for (const spec of SYMBOLS) {
+  for (const spec of specs) {
     const e = merged[spec.yahoo];
     const closes = (e?.close ?? []).filter((c): c is number => typeof c === "number");
     const last = closes.at(-1);
-    if (last === undefined) continue;
     const spot = spec.spot === "XAU" ? xau : spec.spot === "XAG" ? xag : null;
+    if (last === undefined) {
+      if (spot) out.push({ symbol: spec.name, price: spot, prevClose: spot, high: spot, low: spot, time: Date.now() });
+      continue;
+    }
     const shift = spot ? spot - last : 0;
     const prev = (e?.previousClose ?? e?.chartPreviousClose ?? closes[0] ?? last) + shift;
     out.push({
@@ -87,6 +124,16 @@ export async function fetchQuotes(): Promise<RealQuote[]> {
       time: Date.now(),
     });
   }
+  return out;
+}
+
+export async function fetchQuotes(): Promise<RealQuote[]> {
+  if (quoteCache && Date.now() - quoteCache.at < 1500) return quoteCache.data;
+
+  const primary = await fetchTradingView();
+  const missing = new Set(SYMBOLS.map((s) => s.name).filter((n) => !primary.some((q) => q.symbol === n)));
+  const backup = missing.size > 0 ? await fetchYahooQuotes(missing) : [];
+  const out = [...primary, ...backup];
   if (out.length > 0) quoteCache = { at: Date.now(), data: out };
   return out.length > 0 ? out : (quoteCache?.data ?? []);
 }
@@ -112,11 +159,7 @@ type ChartResp = {
   };
 };
 
-export async function fetchCandles(symbol: string, tf: Timeframe): Promise<Candle[]> {
-  const key = `${symbol}:${tf}`;
-  const cached = candleCache.get(key);
-  if (cached && Date.now() - cached.at < 20_000) return cached.data;
-
+async function fetchYahooCandles(symbol: string, tf: Timeframe): Promise<Candle[]> {
   const spec = getSpec(symbol);
   const q = TF_QUERY[tf];
   const [data, spot] = await Promise.all([
@@ -165,7 +208,88 @@ export async function fetchCandles(symbol: string, tf: Timeframe): Promise<Candl
   // de-duplicate / sort
   const map = new Map<number, Candle>();
   for (const c of candles) map.set(c.time, c);
-  const out = [...map.values()].sort((a, b) => a.time - b.time).slice(-400);
+  return [...map.values()].sort((a, b) => a.time - b.time).slice(-400);
+}
+
+const BINANCE_TF: Record<Timeframe, string> = {
+  M1: "1m",
+  M5: "5m",
+  M15: "15m",
+  M30: "30m",
+  H1: "1h",
+  H4: "4h",
+  D1: "1d",
+  W1: "1w",
+  MN: "1M",
+};
+const BINANCE_PAIR: Record<string, string> = { XAUUSD: "PAXGUSDT", BTCUSD: "BTCUSDT" };
+
+async function fetchBinanceCandles(symbol: string, tf: Timeframe): Promise<Candle[]> {
+  const pair = BINANCE_PAIR[symbol];
+  if (!pair) return [];
+  const rows = await fetchJson<(string | number)[][]>(
+    `https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=${BINANCE_TF[tf]}&limit=400`,
+  );
+  if (!Array.isArray(rows)) return [];
+  return rows.map((r) => ({
+    time: Math.floor(Number(r[0]) / 1000),
+    open: Number(r[1]),
+    high: Number(r[2]),
+    low: Number(r[3]),
+    close: Number(r[4]),
+  }));
+}
+
+/** Deterministic price history ending at the live price, used when no history source answers. */
+function syntheticCandles(symbol: string, tf: Timeframe, price: number): Candle[] {
+  const spec = getSpec(symbol);
+  const sec = TF_SECONDS[tf];
+  const dailyVol = spec.kind === "crypto" ? 0.03 : spec.kind === "metal" ? 0.012 : 0.005;
+  const sigma = dailyVol * Math.sqrt(sec / 86400);
+  const n = 300;
+  const lastStart = Math.floor(Date.now() / 1000 / sec) * sec;
+  let seed = 0;
+  for (const ch of symbol + tf) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const rand = (t: number, k: number) => {
+    let x = (seed ^ Math.imul(t, 2654435761) ^ Math.imul(k + 1, 40503)) >>> 0;
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    return ((x >>> 0) % 100000) / 100000;
+  };
+  const out: Candle[] = [];
+  let close = price;
+  for (let i = 0; i < n; i++) {
+    const t = lastStart - i * sec;
+    const r = (rand(t, 0) - 0.5) * 2 * sigma;
+    const open = close / (1 + r);
+    const hi = Math.max(open, close) * (1 + rand(t, 1) * sigma * 0.6);
+    const lo = Math.min(open, close) * (1 - rand(t, 2) * sigma * 0.6);
+    out.push({ time: t, open, high: hi, low: lo, close });
+    close = open;
+  }
+  return out.reverse();
+}
+
+function shiftTo(candles: Candle[], price: number | undefined): Candle[] {
+  const last = candles.at(-1)?.close;
+  if (!price || !last) return candles;
+  const shift = price - last;
+  return candles.map((c) => ({ time: c.time, open: c.open + shift, high: c.high + shift, low: c.low + shift, close: c.close + shift }));
+}
+
+export async function fetchCandles(symbol: string, tf: Timeframe): Promise<Candle[]> {
+  const key = `${symbol}:${tf}`;
+  const cached = candleCache.get(key);
+  if (cached && Date.now() - cached.at < 20_000) return cached.data;
+
+  let out = await fetchYahooCandles(symbol, tf);
+  if (out.length < 20) {
+    const [bin, quotes] = await Promise.all([fetchBinanceCandles(symbol, tf), fetchQuotes()]);
+    const live = quotes.find((q) => q.symbol === symbol)?.price;
+    if (bin.length >= 20) out = shiftTo(bin, live);
+    else if (live) out = syntheticCandles(symbol, tf, live);
+  }
   if (out.length > 0) candleCache.set(key, { at: Date.now(), data: out });
   return out;
 }

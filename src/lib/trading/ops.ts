@@ -65,6 +65,8 @@ export function initialState(now = Date.now()): TerminalState {
       config: { ...DEFAULT_ADMIN },
     },
     nextTicket: first + 1,
+    epoch: 1,
+    lastTick: now,
   };
 }
 

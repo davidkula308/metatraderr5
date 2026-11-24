@@ -14,13 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      terminal: {
+        Row: {
+          id: number
+          state: Json
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          id?: number
+          state: Json
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          id?: number
+          state?: Json
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      terminal_log: {
+        Row: {
+          created_at: string
+          data: Json
+          id: number
+          kind: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id?: number
+          kind: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: number
+          kind?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      terminal_commit: {
+        Args: {
+          p_expected: number
+          p_logs: Json
+          p_reset: boolean
+          p_state: Json
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

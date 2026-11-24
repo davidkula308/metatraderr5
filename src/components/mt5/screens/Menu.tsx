@@ -2,10 +2,12 @@ import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, ExternalLink, MessageCircle, Plus, Search, ShieldCheck } from "lucide-react";
+import { ChevronRight, Download, ExternalLink, Loader2, MessageCircle, Plus, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { getCalendar, getNews } from "@/lib/market/market.functions";
 import { fmtMoney } from "@/lib/trading/calc";
+import { APK_URL, applyUpdate, fetchLatestUpdate, isAndroidApp } from "@/lib/app-update";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { setState, unlockAdmin, useTerminal } from "@/lib/trading/store";
 import type { UiSettings } from "@/lib/trading/types";
 import { fmtDateTime } from "@/lib/time";
@@ -197,6 +199,23 @@ export function SettingsScreen() {
   const navigate = useNavigate();
   const [pin, setPin] = useState<string | null>(null);
   const [err, setErr] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const hydrated = useHydrated();
+  const inApp = hydrated && isAndroidApp();
+  const checkUpdates = async () => {
+    if (checking) return;
+    setChecking(true);
+    const r = await fetchLatestUpdate();
+    setChecking(false);
+    if (r.kind === "updating") toast("New version found — updating…");
+    else if (r.kind === "latest") toast("You have the latest version");
+    else if (r.kind === "offline") toast("No connection. Try again later");
+    else
+      toast("A new version of the app is available", {
+        action: { label: "Download", onClick: () => window.open(r.url, "_blank") },
+        cancel: { label: "Refresh", onClick: () => void applyUpdate() },
+      });
+  };
   const toggle = (k: keyof UiSettings) => (v: boolean) => setState((st) => ({ ...st, settings: { ...st.settings, [k]: v } }));
   const sw = (k: keyof UiSettings) => <Switch checked={s.settings[k]} onCheckedChange={toggle(k)} />;
   return (
@@ -225,6 +244,22 @@ export function SettingsScreen() {
             setErr(false);
             setPin("");
           }}
+        />
+        {!inApp && (
+          <a href={APK_URL} download="TradeSim5.apk" className="block">
+            <SettingRow
+              title="Install app"
+              sub="Download the Android app (APK)"
+              right={<Download className="h-5 w-5 text-primary" />}
+              onClick={() => toast("Downloading the app… open the file to install it")}
+            />
+          </a>
+        )}
+        <SettingRow
+          title="Fetch latest updates"
+          sub={checking ? "Checking for updates…" : "Get the newest version of the app"}
+          right={checking ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <RefreshCw className="h-5 w-5 text-primary" />}
+          onClick={() => void checkUpdates()}
         />
         <SettingRow title="About" sub="MetaTrader 5" onClick={() => navigate({ to: "/about" })} right={<ChevronRight className="h-5 w-5 text-muted-foreground" />} />
       </Scroll>

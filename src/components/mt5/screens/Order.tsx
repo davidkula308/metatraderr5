@@ -3,8 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
 import { getSpec, SYMBOLS } from "@/lib/market/symbols";
-import { openPosition } from "@/lib/trading/ops";
-import { getState, nowMs, setState, useTerminal } from "@/lib/trading/store";
+import { dispatch, getState, useTerminal } from "@/lib/trading/store";
 import { BigPrice } from "../PriceText";
 import { Page, Scroll, TopBar } from "../Shell";
 import { SymbolIcon } from "../SymbolIcon";
@@ -29,13 +28,14 @@ export function OrderScreen({ symbol: initial }: { symbol: string }) {
 
   const step = (d: number) => setVol((v) => Math.max(0.01, Math.min(100, Math.round((v + d) * 100) / 100)));
   const submit = (side: "buy" | "sell") => {
-    const { state, ticket } = openPosition(getState(), symbol, side, vol, nowMs());
-    if (ticket === null) {
+    if (!getState().display[symbol]) {
       toast.error("No price yet");
       return;
     }
-    setState(() => state);
-    toast.success(`Order #${ticket} ${side} ${vol.toFixed(2)} ${symbol} done`);
+    void dispatch({ t: "open", symbol, side, volume: vol }).then((res) => {
+      if (res?.ticket) toast.success(`Order #${res.ticket} ${side} ${vol.toFixed(2)} ${symbol} done`);
+      else toast.error("Order failed, check your connection");
+    });
     navigate({ to: "/trade" });
   };
 

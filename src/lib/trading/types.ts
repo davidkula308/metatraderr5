@@ -155,4 +155,8 @@ export interface TerminalState {
   admin: AdminConfig;
   engine: EngineState;
   nextTicket: number;
+  /** Bumped when the account is reset, so every phone drops its old history. */
+  epoch: number;
+  /** Server time of the last simulation step. */
+  lastTick: number;
 }

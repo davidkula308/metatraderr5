@@ -1,43 +1,42 @@
 import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getQuotes } from "@/lib/market/market.functions";
-import { getSpec } from "@/lib/market/symbols";
-import { engineTick } from "@/lib/trading/engine";
-import { applyRealQuotes, hydrate, nowMs, setClockSkew, setState } from "@/lib/trading/store";
+import { sendCommand, syncTerminal } from "@/lib/trading/terminal.functions";
+import { captureBaseline } from "@/lib/app-update";
+import { hydrate, setTransport, syncNow, type Snapshot } from "@/lib/trading/store";
 
-/** Polls live prices and drives the trade simulation while the app is open. */
+/** Keeps this phone in step with the shared account: live prices, trades and admin settings. */
 export function TerminalRunner() {
-  const fetchQuotes = useServerFn(getQuotes);
+  const syncFn = useServerFn(syncTerminal);
+  const sendFn = useServerFn(sendCommand);
 
   useEffect(() => {
     hydrate();
-    let alive = true;
-    let skewSet = false;
-    const poll = async () => {
-      const sent = Date.now();
+    captureBaseline();
+    setTransport({
+      sync: (d) => syncFn({ data: d }) as Promise<Snapshot>,
+      send: (d) => sendFn({ data: d }) as Promise<Snapshot>,
+    });
+    let busy = false;
+    const loop = async () => {
+      if (busy || document.hidden) return;
+      busy = true;
       try {
-        const r = await fetchQuotes();
-        if (!alive) return;
-        if (!skewSet) {
-          setClockSkew(r.serverTime - (sent + Date.now()) / 2);
-          skewSet = true;
-        }
-        applyRealQuotes(r.quotes, (s) => getSpec(s).digits);
+        await syncNow();
       } catch {
-        /* keep last prices */
+        /* keep last state, try again next round */
+      } finally {
+        busy = false;
       }
     };
-    void poll();
-    const pollId = setInterval(poll, 2500);
-    const tickId = setInterval(() => {
-      setState((s) => (s.hydrated ? engineTick(s, nowMs()) : s));
-    }, 500);
+    void loop();
+    const id = setInterval(loop, 1000);
+    const onVis = () => void loop();
+    document.addEventListener("visibilitychange", onVis);
     return () => {
-      alive = false;
-      clearInterval(pollId);
-      clearInterval(tickId);
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
     };
-  }, [fetchQuotes]);
+  }, [syncFn, sendFn]);
 
   return null;
 }

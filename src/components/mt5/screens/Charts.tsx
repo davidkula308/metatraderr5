@@ -2,8 +2,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp, Crosshair } from "lucide-react";
 import { toast } from "sonner";
 import { getSpec, TIMEFRAMES, SYMBOLS } from "@/lib/market/symbols";
-import { openPosition } from "@/lib/trading/ops";
-import { getState, nowMs, setState, useTerminal } from "@/lib/trading/store";
+import { dispatch, getState, setState, useTerminal } from "@/lib/trading/store";
 import { cn } from "@/lib/utils";
 import { CandleChart } from "../CandleChart";
 import { BigPrice } from "../PriceText";
@@ -28,13 +27,14 @@ export function ChartsScreen() {
     setState((st) => ({ ...st, chart: { ...st.chart, lot: Math.max(0.01, Math.min(100, Math.round(v * 100) / 100)) } }));
 
   const trade = (side: "buy" | "sell") => {
-    const { state, ticket } = openPosition(getState(), symbol, side, lot, nowMs());
-    if (ticket === null) {
+    if (!getState().display[symbol]) {
       toast.error("No price yet, try again in a moment");
       return;
     }
-    setState(() => state);
-    toast.success(`${side} ${lot.toFixed(2)} ${symbol} opened`);
+    void dispatch({ t: "open", symbol, side, volume: lot }).then((res) => {
+      if (res?.ticket) toast.success(`${side} ${lot.toFixed(2)} ${symbol} opened`);
+      else toast.error("Order failed, check your connection");
+    });
   };
 
   return (
