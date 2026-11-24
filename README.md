@@ -1,14 +1,20 @@
-# Welcome to your Lovable project
+# Metatraderr5
+
+I want to create an application that looks like and functions like MetaTrader 5 for mobile, specifically for mobile responsiveness. So, the interface, the tabs, the hamburger menu, the three lines menu on the side, when clicked, what it displays, and the clicks. When I click, it should also open what it is always there in the MT5. Everything. Also, under trade section, there should be open trades. If a trade is opened under the chart section, it should also show the chart. And for the chart, let's use the real prices. Under charts, it will display the real chart from that, and we will use free charts AI, not AI, API, to fetch real prices and charts. Let me share screenshots of how the app should look like from different tabs and different settings. Then later, I will tell you on how it should be functioning. Then, under the trade section, I want to simulate trades. So, in the app...
+
+In the settings tab, not settings tab, settings section that is found when the hamburger menu is clicked, the top left button menu, there is always a settings button in MT5. When it's clicked, let it open a setting, and then inside that tab, there will be a button called Admin, and the access button to the admin is 4030. Then inside the admin, you can simulate trades from there. Inside that, it will be showing the current live view under the trade section. If there are no trades that are being simulated, it will show no trades. Then there will be a configuration panel in the admin to set how many trades to simulate. For example, the field will require the user to put a number like six. Then another field to set the lot size, for example, 0.01. Another field to set the pair, to select the pair. And this pair should also be in the quotes tab in the app. So the pair, the default one is XAUUSD, that is gold. Then they will be seeing the live price there too. So when I, for example, put simulate six trades of a lot size of 0.01, there will be also another configuration to show close on what, and the options are on profit or on loss. So if I choose on profit, it will always close on profit. Then the user will also be needed to choose what conditions make it to close on profit. One, when the profit counter or the loss counter, or the profit counter shifts to maybe 2 dollars or something, or a certain percentage of the total equity of the account. Also, the balance of the account should be simulated. So the admin puts the account balance there, for example, 1,000 dollars. So under the trade, when the trades are not taking place, the equity, the margin, and everything will respect that balance. Then when the user puts how many trades to open, and then it chooses for how long should the simulated trades stay on loss, so that it can be moving like it's moving on loss, then profit. But always to close on profit, that is the default setting. They should always close on profit after a certain equity growth. Then the user specifies whether this is a one-time instance or an automation. When the automation is turned on, it will keep repeating that. It opens like six trades or the set trades, then the price, it fluctuates like how trades open in MT5 on loss, and then they close all at once on profit. Then they open another batch. They open another batch, it does the same, it closes on profit, then opens another batch. All this time, the equity is growing strategically in the way it grows normally on MT5. So the account is growing in a way that makes sense from the trades. And when the calculations are done, it is the real thing. It shows that. Then in the admin also, the user can choose for how long to keep doing this, and the option will be to set a time in minutes or hours. They choose the format to use, either minutes, seconds, or hours, to keep automating that close, then open again, that cycle. And the other one is until the user pauses the automation in the admin. So once these are done, and then the user now goes back to the app, under the trade sections, they will start automating. Then also in the admin panel, they will set at what time should this automation start. So this app should be able to read the current time, and not only the Kenyan time, but all times, every time that is there, the UK time, the USA time, every time. Then they will choose on the UK time, it will tell the user from online, it fetches the time online, the current time in USA, or on those other time zones. Then the user will select a different time on each zone, so that it will respect the time zones. So maybe, or put instead of time zones, the user can choose to use just minutes, 30 minutes or 10 seconds from initiation. Then also, there will be a delay. A user configures the delay to be used before opening the next batch of trades. Also, these trades, when they are open and counting, when I move to the charts section, they should be showing that there are trades that have been opened there. And for the charts, yeah, on the charts, it should show that the trades are open there. Also in the admin, the user can be able to choose whether to use TP and stop loss. But for that, just leave it at that, we'll configure it later. But just focus on the trades opening and then closing on profits, and then the account keeps growing. Let me share the screenshots.
 
 This project was built with [Lovable](https://lovable.dev).
 
+**Live app**: https://metatraderr5.lovable.app
+
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/54506d8f-abe1-4c9b-aadf-70adedecf212).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +26,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
