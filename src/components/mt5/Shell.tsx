@@ -196,9 +196,6 @@ function SideDrawer({ onClose }: { onClose: () => void }) {
     <div className="absolute inset-0 z-50">
       <button aria-label="Close menu" className="absolute inset-0 bg-overlay animate-fade" onClick={onClose} />
       <aside className="absolute inset-y-0 left-0 flex w-[75%] max-w-[340px] flex-col overflow-hidden bg-background animate-drawer">
-        <div className="pointer-events-none absolute -right-9 top-4 w-36 rotate-45 bg-demo py-0.5 text-center font-condensed text-[13px] text-demo-foreground">
-          Demo
-        </div>
         <div className="flex gap-4 border-b border-border px-4 pb-4 pt-6">
           {s.remote?.config.logoImage ? (
             <img src={s.remote.config.logoImage} alt="Account logo" className="h-12 w-12 shrink-0 rounded-md object-contain" referrerPolicy="no-referrer" />
