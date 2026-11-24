@@ -111,6 +111,34 @@
   --sidebar-accent-foreground: oklch(0.16 0 0);
   --sidebar-border: oklch(0.9 0 0);
   --sidebar-ring: oklch(0.62 0.18 255);
+  --remote-logo-bg: var(--primary);
+  --remote-logo-fg: var(--primary-foreground);
+}
+
+.remote-logo { background: var(--remote-logo-bg); color: var(--remote-logo-fg); }
+
+.dark {
+  --background: oklch(0.17 0 0);
+  --foreground: oklch(0.94 0 0);
+  --card: oklch(0.2 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.22 0 0);
+  --popover-foreground: var(--foreground);
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.72 0 0);
+  --accent: oklch(0.3 0 0);
+  --accent-foreground: var(--foreground);
+  --secondary: oklch(0.28 0.03 255);
+  --border: oklch(0.34 0 0);
+  --input: var(--border);
+  --section: oklch(0.2 0 0);
+  --pill: oklch(0.3 0 0);
+  --pill-loss: oklch(0.28 0.035 20);
+  --pill-profit: oklch(0.28 0.035 255);
+  --icon: oklch(0.8 0 0);
+  --frame: oklch(0.12 0 0);
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
 }
 
 @layer base {

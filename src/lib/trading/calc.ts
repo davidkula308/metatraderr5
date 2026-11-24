@@ -30,13 +30,13 @@ export function openPrice(side: Side, p: PriceLike): number {
 }
 
 export function positionProfit(
-  pos: { symbol: string; type: Side; volume: number; openPrice: number },
+  pos: { symbol: string; type: Side; volume: number; openPrice: number; markPrice?: number },
   current: number,
   prices: PriceMap,
 ): number {
   const spec = getSpec(pos.symbol);
   const dir = pos.type === "buy" ? 1 : -1;
-  return (current - pos.openPrice) * dir * pos.volume * spec.contract * rateToUSD(spec.quote, prices);
+  return ((pos.markPrice ?? current) - pos.openPrice) * dir * pos.volume * spec.contract * rateToUSD(spec.quote, prices);
 }
 
 /** USD margin required for a position, standard MT5 forex formula. */
@@ -60,7 +60,7 @@ export interface AccountSummary {
 
 export function summarize(
   balance: number,
-  positions: { symbol: string; type: Side; volume: number; openPrice: number; swap: number }[],
+  positions: { symbol: string; type: Side; volume: number; openPrice: number; swap: number; commission?: number; markPrice?: number }[],
   prices: PriceMap,
   leverage: number,
 ): AccountSummary {
@@ -69,7 +69,7 @@ export function summarize(
   for (const p of positions) {
     const q = prices[p.symbol];
     if (!q) continue;
-    profit += positionProfit(p, closePrice(p.type, q), prices) + p.swap;
+    profit += positionProfit(p, closePrice(p.type, q), prices) + p.swap + (p.commission ?? 0);
     margin += marginFor(getSpec(p.symbol), p.volume, p.openPrice, leverage, prices);
   }
   const equity = balance + profit;
@@ -88,7 +88,7 @@ export function fmtMoney(n: number, digits = 2): string {
   const neg = n < 0;
   const fixed = Math.abs(n).toFixed(digits);
   const [int, dec] = fixed.split(".");
-  const spaced = int!.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const spaced = (int ?? "0").replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   return `${neg ? "-" : ""}${spaced}${dec !== undefined ? "." + dec : ""}`;
 }
 

@@ -16,6 +16,8 @@ import {
   type SharedState,
 } from "./commands";
 import { initialState } from "./ops";
+import { applyRemoteConfig } from "./remote";
+import { publicRemote, type RemoteConfig } from "./remote-config";
 
 export interface TerminalSnapshot {
   shared: SharedState;
@@ -59,7 +61,7 @@ async function readLogs(since: number): Promise<LogEntry[]> {
  * Bring the shared terminal up to date (live prices + simulation), optionally run one command,
  * save it, and return what the phone needs to show.
  */
-export async function runCycle(opts: { cmd?: Command; since?: number; epoch?: number; noLogs?: boolean }): Promise<TerminalSnapshot> {
+export async function runCycle(opts: { cmd?: Command; remoteConfig?: RemoteConfig; since?: number; epoch?: number; noLogs?: boolean }): Promise<TerminalSnapshot> {
   const quotes = await fetchQuotes();
   let result: CommandResult | null = null;
   let shared: SharedState | null = null;
@@ -71,6 +73,7 @@ export async function runCycle(opts: { cmd?: Command; since?: number; epoch?: nu
     const startEpoch = row ? s.epoch : 0;
     s = withRealQuotes(s, quotes, now);
     s = advanceTo(s, now);
+    if (opts.remoteConfig) s = applyRemoteConfig(s, opts.remoteConfig, now);
     if (opts.cmd) {
       const r = applyCommand(s, opts.cmd, now);
       s = r.state;
@@ -84,7 +87,7 @@ export async function runCycle(opts: { cmd?: Command; since?: number; epoch?: nu
       break;
     }
     // Another phone saved first. A plain refresh can just show that; a command must retry.
-    if (!opts.cmd && row) {
+    if (!opts.cmd && !opts.remoteConfig && row) {
       const fresh = await load();
       if (fresh) {
         shared = toShared(fromShared(fresh.state, now));
@@ -96,5 +99,5 @@ export async function runCycle(opts: { cmd?: Command; since?: number; epoch?: nu
 
   const full = !opts.since || opts.epoch !== shared.epoch;
   const logs = opts.noLogs ? [] : await readLogs(full ? 0 : (opts.since ?? 0));
-  return { shared, logs, full, serverTime: Date.now(), result };
+  return { shared: { ...shared, remote: publicRemote(shared.remote) }, logs, full, serverTime: Date.now(), result };
 }

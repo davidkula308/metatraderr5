@@ -28,6 +28,7 @@ import { Route as OrderRouteImport } from './routes/order'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SymbolsRouteImport } from './routes/symbols'
 import { Route as TradeRouteImport } from './routes/trade'
+import { Route as ApiPublicRemoteConfigRouteImport } from './routes/api/public/remote-config'
 import { Route as ApiPublicTickRouteImport } from './routes/api/public/tick'
 
 const IndexRoute = IndexRouteImport.update({
@@ -125,6 +126,11 @@ const TradeRoute = TradeRouteImport.update({
   path: '/trade',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicRemoteConfigRoute = ApiPublicRemoteConfigRouteImport.update({
+  id: '/api/public/remote-config',
+  path: '/api/public/remote-config',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTickRoute = ApiPublicTickRouteImport.update({
   id: '/api/public/tick',
   path: '/api/public/tick',
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/symbols': typeof SymbolsRoute
   '/trade': typeof TradeRoute
+  '/api/public/remote-config': typeof ApiPublicRemoteConfigRoute
   '/api/public/tick': typeof ApiPublicTickRoute
 }
 export interface FileRoutesByTo {
@@ -173,6 +180,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/symbols': typeof SymbolsRoute
   '/trade': typeof TradeRoute
+  '/api/public/remote-config': typeof ApiPublicRemoteConfigRoute
   '/api/public/tick': typeof ApiPublicTickRoute
 }
 export interface FileRoutesById {
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/symbols': typeof SymbolsRoute
   '/trade': typeof TradeRoute
+  '/api/public/remote-config': typeof ApiPublicRemoteConfigRoute
   '/api/public/tick': typeof ApiPublicTickRoute
 }
 export interface FileRouteTypes {
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/symbols'
     | '/trade'
+    | '/api/public/remote-config'
     | '/api/public/tick'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/symbols'
     | '/trade'
+    | '/api/public/remote-config'
     | '/api/public/tick'
   id:
     | '__root__'
@@ -264,6 +275,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/symbols'
     | '/trade'
+    | '/api/public/remote-config'
     | '/api/public/tick'
   fileRoutesById: FileRoutesById
 }
@@ -287,6 +299,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SymbolsRoute: typeof SymbolsRoute
   TradeRoute: typeof TradeRoute
+  ApiPublicRemoteConfigRoute: typeof ApiPublicRemoteConfigRoute
   ApiPublicTickRoute: typeof ApiPublicTickRoute
 }
 
@@ -425,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TradeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/remote-config': {
+      id: '/api/public/remote-config'
+      path: '/api/public/remote-config'
+      fullPath: '/api/public/remote-config'
+      preLoaderRoute: typeof ApiPublicRemoteConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/tick': {
       id: '/api/public/tick'
       path: '/api/public/tick'
@@ -455,6 +475,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SymbolsRoute: SymbolsRoute,
   TradeRoute: TradeRoute,
+  ApiPublicRemoteConfigRoute: ApiPublicRemoteConfigRoute,
   ApiPublicTickRoute: ApiPublicTickRoute,
 }
 export const routeTree = rootRouteImport

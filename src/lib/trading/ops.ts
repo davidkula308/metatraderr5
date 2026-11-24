@@ -27,6 +27,7 @@ export const DEFAULT_ADMIN: AdminConfig = {
 export function initialState(now = Date.now()): TerminalState {
   const first = 54_812_000 + Math.floor((now / 1000) % 100000);
   return {
+    remote: null,
     hydrated: false,
     real: {},
     display: {},
@@ -164,7 +165,7 @@ export function closePositions(s: TerminalState, tickets: number[], now: number)
     const q = prices[p.symbol];
     if (!q) continue;
     const spec = getSpec(p.symbol);
-    const cp = Number(closePrice(p.type, q).toFixed(spec.digits));
+    const cp = Number((p.markPrice ?? closePrice(p.type, q)).toFixed(spec.digits));
     const profit = round2(positionProfit(p, cp, prices));
     total += profit + p.swap + p.commission;
     const closeSide: Side = p.type === "buy" ? "sell" : "buy";

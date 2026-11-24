@@ -3,6 +3,7 @@ import type { Side } from "./calc";
 import { engineTick, startEngine, stopEngineNow } from "./engine";
 import { balanceOperation, closePositions, computeDisplay, initialState, openPosition } from "./ops";
 import type { Account, AdminConfig, ClosedPosition, Deal, JournalEntry, OrderRec, RealQuote, TerminalState } from "./types";
+import { remoteTick } from "./remote";
 
 /** Everything a phone can ask the shared terminal to do. */
 export type Command =
@@ -42,16 +43,24 @@ export function applyCommand(s: TerminalState, cmd: Command, now: number): { sta
     }
     case "admin": {
       const admin = { ...s.admin, ...cmd.patch };
+      const remote = s.remote ? { ...s.remote, forceLoss: admin.closeOn === "loss", config: { ...s.remote.config,
+        symbol: admin.symbol, lot: admin.lot, tradesPerWave: admin.trades,
+        execMode: cmd.patch.direction !== undefined ? (admin.direction === "random" ? "both" as const : admin.direction) : s.remote.config.execMode ?? "buy",
+        continuity: admin.mode === "once" ? "single" as const : "continuous" as const,
+      } } : null;
       const live = s.engine.status !== "idle" && s.engine.status !== "finished";
       return {
-        state: { ...s, admin, engine: live ? { ...s.engine, config: { ...s.engine.config, ...cmd.patch } } : s.engine },
+        state: { ...s, admin, remote, engine: live ? { ...s.engine, config: { ...s.engine.config, ...cmd.patch } } : s.engine },
         result: {},
       };
     }
     case "account":
-      return { state: { ...s, account: { ...s.account, ...cmd.patch } }, result: {} };
+      return { state: { ...s, account: { ...s.account, ...cmd.patch }, remote: s.remote ? { ...s.remote, config: {
+        ...s.remote.config, ...(cmd.patch.name !== undefined ? { accountName: cmd.patch.name } : {}),
+        ...(cmd.patch.login !== undefined ? { login: cmd.patch.login } : {}), ...(cmd.patch.server !== undefined ? { server: cmd.patch.server } : {}),
+      } } : null }, result: {} };
     case "start":
-      return { state: startEngine(s, now), result: {} };
+      return { state: startEngine({ ...s, remote: s.remote ? { ...s.remote, active: false } : null }, now), result: {} };
     case "pause":
       return {
         state:
@@ -65,15 +74,16 @@ export function applyCommand(s: TerminalState, cmd: Command, now: number): { sta
     case "resume":
       return { state: s.engine.status === "stopping" ? { ...s, engine: { ...s.engine, status: "running" } } : s, result: {} };
     case "stop":
-      return { state: stopEngineNow(s, now), result: {} };
+      return { state: stopEngineNow({ ...s, remote: s.remote ? { ...s.remote, active: false } : null }, now), result: {} };
     case "setBalance":
-      return { state: balanceOperation(s, cmd.value - s.account.balance, now), result: {} };
+      return { state: balanceOperation({ ...s, remote: s.remote ? { ...s.remote, config: { ...s.remote.config, balance: cmd.value } } : null }, cmd.value - s.account.balance, now), result: {} };
     case "reset": {
       const fresh = initialState(now);
       const deals = fresh.deals.map((d) => ({ ...d, profit: cmd.value }));
       return {
         state: {
           ...s,
+          remote: s.remote ? { ...s.remote, active: false, config: { ...s.remote.config, balance: cmd.value } } : null,
           positions: [],
           history: [],
           orders: [],
@@ -128,7 +138,10 @@ export function advanceTo(input: TerminalState, now: number, rnd: () => number =
   const steps = Math.min(240, Math.max(1, Math.ceil(gap / 1000)));
   const dt = gap / steps;
   let s = input;
-  for (let i = 1; i <= steps; i++) s = engineTick(s, Math.round(last + dt * i), rnd, dt);
+  for (let i = 1; i <= steps; i++) {
+    const time = Math.round(last + dt * i);
+    s = s.remote?.active ? remoteTick(s, time) : engineTick(s, time, rnd, dt);
+  }
   return { ...s, lastTick: now };
 }
 
@@ -147,11 +160,12 @@ export interface LogEntry extends LogRow {
 /** Parts of the state that every phone shares (history lists live in the log). */
 export type SharedState = Pick<
   TerminalState,
-  "real" | "display" | "offsets" | "account" | "positions" | "admin" | "engine" | "nextTicket" | "epoch" | "lastTick"
+  "remote" | "real" | "display" | "offsets" | "account" | "positions" | "admin" | "engine" | "nextTicket" | "epoch" | "lastTick"
 >;
 
 export function toShared(s: TerminalState): SharedState {
   return {
+    remote: s.remote,
     real: s.real,
     display: s.display,
     offsets: s.offsets,

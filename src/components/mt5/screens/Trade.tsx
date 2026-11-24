@@ -33,8 +33,8 @@ function PositionRow({ p, onLong }: { p: Position; onLong: (p: Position) => void
   const longFired = useRef(false);
   const q = s.display[p.symbol];
   const spec = getSpec(p.symbol);
-  const cur = q ? closePrice(p.type, q) : p.openPrice;
-  const profit = q ? positionProfit(p, cur, s.display) : 0;
+  const cur = p.markPrice ?? (q ? closePrice(p.type, q) : p.openPrice);
+  const profit = q ? positionProfit(p, cur, s.display) + p.swap + p.commission : 0;
   const start = () => {
     longFired.current = false;
     timer.current = setTimeout(() => {
@@ -110,8 +110,10 @@ export function PositionsList({ emptyText = "", sort = "open" as SortKey }: { em
   const list = [...s.positions].sort((a, b) => {
     if (sort === "symbol") return a.symbol.localeCompare(b.symbol);
     if (sort === "profit") {
-      const pa = s.display[a.symbol] ? positionProfit(a, closePrice(a.type, s.display[a.symbol]!), s.display) : 0;
-      const pb = s.display[b.symbol] ? positionProfit(b, closePrice(b.type, s.display[b.symbol]!), s.display) : 0;
+      const aq = s.display[a.symbol];
+      const bq = s.display[b.symbol];
+      const pa = aq ? positionProfit(a, closePrice(a.type, aq), s.display) + a.swap + a.commission : 0;
+      const pb = bq ? positionProfit(b, closePrice(b.type, bq), s.display) + b.swap + b.commission : 0;
       return pb - pa;
     }
     return a.openTime - b.openTime;
@@ -122,7 +124,7 @@ export function PositionsList({ emptyText = "", sort = "open" as SortKey }: { em
     const tickets = st.positions
       .filter((p) => {
         const q = st.display[p.symbol];
-        return q ? fn(p, positionProfit(p, closePrice(p.type, q), st.display)) : false;
+        return q ? fn(p, positionProfit(p, closePrice(p.type, q), st.display) + p.swap + p.commission) : false;
       })
       .map((p) => p.ticket);
     if (!tickets.length) return;
@@ -190,8 +192,8 @@ function CloseSheet({ p, onClose }: { p: Position; onClose: () => void }) {
       </BottomSheet>
     );
   }
-  const cur = closePrice(p.type, q);
-  const profit = positionProfit(p, cur, s.display);
+  const cur = live.markPrice ?? closePrice(live.type, q);
+  const profit = positionProfit(live, cur, s.display) + live.swap + live.commission;
   return (
     <BottomSheet title={`#${p.ticket} ${p.type} ${p.volume.toFixed(2)} ${p.symbol}`} onClose={onClose}>
       <div className="px-5 py-2">

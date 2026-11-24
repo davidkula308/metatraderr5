@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -32,6 +32,20 @@ export function useDrawer() {
 
 export function PhoneFrame({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const s = useTerminal();
+  const config = s.remote?.config;
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const root = document.documentElement;
+    const update = () => root.classList.toggle("dark", config?.simTheme === "dark" || (config?.simTheme === "auto" && media.matches));
+    update();
+    media.addEventListener("change", update);
+    if (config?.logoBg) root.style.setProperty("--remote-logo-bg", config.logoBg);
+    else root.style.removeProperty("--remote-logo-bg");
+    if (config?.logoFg) root.style.setProperty("--remote-logo-fg", config.logoFg);
+    else root.style.removeProperty("--remote-logo-fg");
+    return () => media.removeEventListener("change", update);
+  }, [config?.simTheme, config?.logoBg, config?.logoFg]);
   return (
     <DrawerCtx.Provider value={{ open, setOpen }}>
       <div className="relative mx-auto flex h-dvh w-full max-w-[480px] flex-col overflow-hidden bg-background shadow-xl">
@@ -186,9 +200,14 @@ function SideDrawer({ onClose }: { onClose: () => void }) {
           Demo
         </div>
         <div className="flex gap-4 border-b border-border px-4 pb-4 pt-6">
-          <Mt5Logo size={48} />
+          {s.remote?.config.logoImage ? (
+            <img src={s.remote.config.logoImage} alt="Account logo" className="h-12 w-12 shrink-0 rounded-md object-contain" referrerPolicy="no-referrer" />
+          ) : s.remote?.config.logoText !== undefined ? (
+            <div className="remote-logo grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-md px-1 text-center text-xs font-semibold break-all">{s.remote.config.logoText}</div>
+          ) : <Mt5Logo size={48} />}
           <div className="min-w-0 pr-6">
             <div className="truncate text-[17px] text-foreground">{s.account.name}</div>
+            {s.account.company && <div className="truncate text-[13px] text-muted-foreground">{s.account.company}</div>}
             <div className="truncate text-[15px] text-muted-foreground">
               {s.account.login} - {s.account.server}
             </div>

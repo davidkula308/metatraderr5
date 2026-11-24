@@ -1,6 +1,7 @@
 import type { Side } from "./calc";
 import type { TimeUnit } from "@/lib/time";
 import type { Timeframe } from "@/lib/market/symbols";
+import type { RemoteState } from "./remote-config";
 
 export interface Position {
   ticket: number;
@@ -14,6 +15,8 @@ export interface Position {
   swap: number;
   commission: number;
   sim?: boolean;
+  markPrice?: number;
+  remoteSequence?: number;
 }
 
 export interface ClosedPosition extends Position {
@@ -123,6 +126,7 @@ export interface EngineState {
 }
 
 export interface Account {
+  company?: string;
   name: string;
   login: string;
   server: string;
@@ -139,6 +143,7 @@ export interface UiSettings {
 }
 
 export interface TerminalState {
+  remote: RemoteState | null;
   hydrated: boolean;
   real: Record<string, RealQuote>;
   display: Record<string, Quote>;
