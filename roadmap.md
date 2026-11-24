@@ -1,8 +1,10 @@
 # Roadmap
-- [ ] Add secure remote receiver and validate all remote settings
-- [ ] Apply remote trading, account, appearance and latest-change-wins rules
-- [ ] Test remote commands and publish receiver
-- [ ] Provide shared-key Generate form and connection address
+- [x] Add secure remote receiver and validate all remote settings
+- [x] Apply remote trading, account, appearance and latest-change-wins rules
+- [x] Test remote commands (real shared key, live UI, profitable closure and history)
+- [x] Republish receiver with saved shared key and verify published connection (200 with key, 401 without)
+- [x] Provide shared-key Generate form
+- [x] Provide published connection address: https://metatraderr5.lovable.app/api/public/remote-config
 - [x] Fix live prices not showing (price source rate-limited) — add backup sources
 - [x] Share account, admin settings and trades across all phones (Lovable Cloud)
 - [x] Keep simulation running when the app is closed (scheduled server tick every minute; works on the published site)
