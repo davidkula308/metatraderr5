@@ -10,33 +10,271 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AccountsRouteImport } from './routes/accounts'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AlgoRouteImport } from './routes/algo'
+import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as ChartsRouteImport } from './routes/charts'
+import { Route as CommunityRouteImport } from './routes/community'
+import { Route as GuideRouteImport } from './routes/guide'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as JournalRouteImport } from './routes/journal'
+import { Route as MailboxRouteImport } from './routes/mailbox'
+import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as Mql5RouteImport } from './routes/mql5'
+import { Route as NewsRouteImport } from './routes/news'
+import { Route as OrderRouteImport } from './routes/order'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SymbolsRouteImport } from './routes/symbols'
+import { Route as TradeRouteImport } from './routes/trade'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountsRoute = AccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlgoRoute = AlgoRouteImport.update({
+  id: '/algo',
+  path: '/algo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChartsRoute = ChartsRouteImport.update({
+  id: '/charts',
+  path: '/charts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideRoute = GuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JournalRoute = JournalRouteImport.update({
+  id: '/journal',
+  path: '/journal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MailboxRoute = MailboxRouteImport.update({
+  id: '/mailbox',
+  path: '/mailbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Mql5Route = Mql5RouteImport.update({
+  id: '/mql5',
+  path: '/mql5',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderRoute = OrderRouteImport.update({
+  id: '/order',
+  path: '/order',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SymbolsRoute = SymbolsRouteImport.update({
+  id: '/symbols',
+  path: '/symbols',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TradeRoute = TradeRouteImport.update({
+  id: '/trade',
+  path: '/trade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/accounts': typeof AccountsRoute
+  '/admin': typeof AdminRoute
+  '/algo': typeof AlgoRoute
+  '/calendar': typeof CalendarRoute
+  '/charts': typeof ChartsRoute
+  '/community': typeof CommunityRoute
+  '/guide': typeof GuideRoute
+  '/history': typeof HistoryRoute
+  '/journal': typeof JournalRoute
+  '/mailbox': typeof MailboxRoute
+  '/messages': typeof MessagesRoute
+  '/mql5': typeof Mql5Route
+  '/news': typeof NewsRoute
+  '/order': typeof OrderRoute
+  '/settings': typeof SettingsRoute
+  '/symbols': typeof SymbolsRoute
+  '/trade': typeof TradeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/accounts': typeof AccountsRoute
+  '/admin': typeof AdminRoute
+  '/algo': typeof AlgoRoute
+  '/calendar': typeof CalendarRoute
+  '/charts': typeof ChartsRoute
+  '/community': typeof CommunityRoute
+  '/guide': typeof GuideRoute
+  '/history': typeof HistoryRoute
+  '/journal': typeof JournalRoute
+  '/mailbox': typeof MailboxRoute
+  '/messages': typeof MessagesRoute
+  '/mql5': typeof Mql5Route
+  '/news': typeof NewsRoute
+  '/order': typeof OrderRoute
+  '/settings': typeof SettingsRoute
+  '/symbols': typeof SymbolsRoute
+  '/trade': typeof TradeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/accounts': typeof AccountsRoute
+  '/admin': typeof AdminRoute
+  '/algo': typeof AlgoRoute
+  '/calendar': typeof CalendarRoute
+  '/charts': typeof ChartsRoute
+  '/community': typeof CommunityRoute
+  '/guide': typeof GuideRoute
+  '/history': typeof HistoryRoute
+  '/journal': typeof JournalRoute
+  '/mailbox': typeof MailboxRoute
+  '/messages': typeof MessagesRoute
+  '/mql5': typeof Mql5Route
+  '/news': typeof NewsRoute
+  '/order': typeof OrderRoute
+  '/settings': typeof SettingsRoute
+  '/symbols': typeof SymbolsRoute
+  '/trade': typeof TradeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/accounts'
+    | '/admin'
+    | '/algo'
+    | '/calendar'
+    | '/charts'
+    | '/community'
+    | '/guide'
+    | '/history'
+    | '/journal'
+    | '/mailbox'
+    | '/messages'
+    | '/mql5'
+    | '/news'
+    | '/order'
+    | '/settings'
+    | '/symbols'
+    | '/trade'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/about'
+    | '/accounts'
+    | '/admin'
+    | '/algo'
+    | '/calendar'
+    | '/charts'
+    | '/community'
+    | '/guide'
+    | '/history'
+    | '/journal'
+    | '/mailbox'
+    | '/messages'
+    | '/mql5'
+    | '/news'
+    | '/order'
+    | '/settings'
+    | '/symbols'
+    | '/trade'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/accounts'
+    | '/admin'
+    | '/algo'
+    | '/calendar'
+    | '/charts'
+    | '/community'
+    | '/guide'
+    | '/history'
+    | '/journal'
+    | '/mailbox'
+    | '/messages'
+    | '/mql5'
+    | '/news'
+    | '/order'
+    | '/settings'
+    | '/symbols'
+    | '/trade'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  AccountsRoute: typeof AccountsRoute
+  AdminRoute: typeof AdminRoute
+  AlgoRoute: typeof AlgoRoute
+  CalendarRoute: typeof CalendarRoute
+  ChartsRoute: typeof ChartsRoute
+  CommunityRoute: typeof CommunityRoute
+  GuideRoute: typeof GuideRoute
+  HistoryRoute: typeof HistoryRoute
+  JournalRoute: typeof JournalRoute
+  MailboxRoute: typeof MailboxRoute
+  MessagesRoute: typeof MessagesRoute
+  Mql5Route: typeof Mql5Route
+  NewsRoute: typeof NewsRoute
+  OrderRoute: typeof OrderRoute
+  SettingsRoute: typeof SettingsRoute
+  SymbolsRoute: typeof SymbolsRoute
+  TradeRoute: typeof TradeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +286,155 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accounts': {
+      id: '/accounts'
+      path: '/accounts'
+      fullPath: '/accounts'
+      preLoaderRoute: typeof AccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/algo': {
+      id: '/algo'
+      path: '/algo'
+      fullPath: '/algo'
+      preLoaderRoute: typeof AlgoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/charts': {
+      id: '/charts'
+      path: '/charts'
+      fullPath: '/charts'
+      preLoaderRoute: typeof ChartsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide': {
+      id: '/guide'
+      path: '/guide'
+      fullPath: '/guide'
+      preLoaderRoute: typeof GuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/journal': {
+      id: '/journal'
+      path: '/journal'
+      fullPath: '/journal'
+      preLoaderRoute: typeof JournalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mailbox': {
+      id: '/mailbox'
+      path: '/mailbox'
+      fullPath: '/mailbox'
+      preLoaderRoute: typeof MailboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mql5': {
+      id: '/mql5'
+      path: '/mql5'
+      fullPath: '/mql5'
+      preLoaderRoute: typeof Mql5RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order': {
+      id: '/order'
+      path: '/order'
+      fullPath: '/order'
+      preLoaderRoute: typeof OrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/symbols': {
+      id: '/symbols'
+      path: '/symbols'
+      fullPath: '/symbols'
+      preLoaderRoute: typeof SymbolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trade': {
+      id: '/trade'
+      path: '/trade'
+      fullPath: '/trade'
+      preLoaderRoute: typeof TradeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  AccountsRoute: AccountsRoute,
+  AdminRoute: AdminRoute,
+  AlgoRoute: AlgoRoute,
+  CalendarRoute: CalendarRoute,
+  ChartsRoute: ChartsRoute,
+  CommunityRoute: CommunityRoute,
+  GuideRoute: GuideRoute,
+  HistoryRoute: HistoryRoute,
+  JournalRoute: JournalRoute,
+  MailboxRoute: MailboxRoute,
+  MessagesRoute: MessagesRoute,
+  Mql5Route: Mql5Route,
+  NewsRoute: NewsRoute,
+  OrderRoute: OrderRoute,
+  SettingsRoute: SettingsRoute,
+  SymbolsRoute: SymbolsRoute,
+  TradeRoute: TradeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
